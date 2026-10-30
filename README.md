@@ -13,7 +13,7 @@ Home Assistant integration for Japanese-market Toshiba washer-dryers that use th
 3. Settings → Devices & services → **Add integration** → *Toshiba Washer-dryer Combo IoLIFE*.
 4. Enter your IoLIFE email, password and the washer's IP address. Keep the washer powered on (panel lit) during setup.
 
-> **Note:** the built-in *Midea* integration pins a different `midea-local` version. Remove it before installing this one.
+> **Requires Home Assistant 2026.11 or newer.** The integration needs `midea-local` 14.0.0+, which Home Assistant first ships in 2026.11 (2026.10.x bundles 12.2.0). Older versions cannot load it.
 
 Manual install: copy `custom_components/toshiba_washer` into your `config/custom_components/` and restart.
 
@@ -54,7 +54,7 @@ pytest tests
 
 **安装：** HACS → ⋮ → 自定义存储库 → 填入 `https://github.com/leerchan/Toshiba-Washer-dryer-Combo-IoLIFE`，类别选「集成」→ 下载 → 重启 HA → 设置 → 设备与服务 → 添加集成 → 搜索 *Toshiba Washer-dryer Combo IoLIFE*，填写 IoLIFE 邮箱、密码和洗衣机 IP。添加时洗衣机需开机（面板亮着）。
 
-**注意：** HA 自带的 Midea 集成锁定了另一个版本的 midea-local，需先删除。
+**注意：需要 Home Assistant 2026.11 或更高版本。** 本集成依赖 midea-local 14.0.0 及以上，HA 从 2026.11 起才内置该版本（2026.10.x 为 12.2.0），旧版 HA 无法加载。
 
 洗衣机关机后 Wi-Fi 会休眠，实体显示「不可用」，开机后 5 秒内恢复。实时活动通知示例见 [`examples/live_activity.yaml`](examples/live_activity.yaml)。
 
