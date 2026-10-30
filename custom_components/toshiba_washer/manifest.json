@@ -1,6 +1,7 @@
 {
   "domain": "toshiba_washer",
   "name": "Toshiba Washer-dryer Combo IoLIFE",
+  "categories": ["appliances_cleaning.laundry"],
   "codeowners": ["@leerchan"],
   "config_flow": true,
   "documentation": "https://github.com/leerchan/Toshiba-Washer-dryer-Combo-IoLIFE",
