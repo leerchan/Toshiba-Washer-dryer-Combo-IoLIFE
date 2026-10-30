@@ -157,13 +157,12 @@ async def test_sensors_follow_device(hass: HomeAssistant) -> None:
         assert await hass.config_entries.async_unload(entry.entry_id)
 
 
-def test_zh_hans_translations_cover_every_state() -> None:
-    """zh-Hans has a name for every entity and every state en has."""
+def test_translations_cover_every_state() -> None:
+    """zh-Hans and ja have a name for every entity and every state en has."""
     import json
     from pathlib import Path
 
     base = Path(__file__).parent.parent / "custom_components/toshiba_washer/translations"
-    en, zh = (json.loads((base / f).read_text()) for f in ("en.json", "zh-Hans.json"))
 
     def keys(d, prefix=""):
         out = set()
@@ -171,7 +170,9 @@ def test_zh_hans_translations_cover_every_state() -> None:
             out |= keys(v, f"{prefix}{k}.") if isinstance(v, dict) else {prefix + k}
         return out
 
-    assert keys(en) == keys(zh)
+    en = keys(json.loads((base / "en.json").read_text()))
+    for lang in ("zh-Hans", "ja"):
+        assert keys(json.loads((base / f"{lang}.json").read_text())) == en, lang
 
 
 async def test_reconnects_every_few_seconds() -> None:

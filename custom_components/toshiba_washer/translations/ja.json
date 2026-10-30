@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "東芝洗濯機（IoLIFE）",
+        "description": "IoLIFE アカウントで一度ログインし、洗濯機の LAN キーを取得します。設定中は洗濯機の電源を入れたまま（パネル点灯）にしてください。",
+        "data": {
+          "email": "IoLIFE メールアドレス",
+          "password": "IoLIFE パスワード",
+          "ip_address": "洗濯機の IP アドレス"
+        }
+      }
+    },
+    "error": {
+      "login_failed": "IoLIFE にログインできません。メールアドレスとパスワードを確認してください。",
+      "no_washer": "この IoLIFE アカウントに洗濯機が見つかりません。",
+      "cannot_connect": "LAN 内で洗濯機に接続できません。電源が入っているか、IP アドレスが正しいか確認してください。",
+      "unknown": "予期しないエラーが発生しました。Home Assistant のログを確認してください。"
+    },
+    "abort": {
+      "already_configured": "この洗濯機はすでに設定されています。"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "状態",
+        "state": {
+          "idle": "電源オフ",
+          "standby": "待機中",
+          "start": "運転中",
+          "pause": "一時停止",
+          "end": "終了"
+        }
+      },
+      "finish_time": {
+        "name": "終了予定時刻"
+      },
+      "stage": {
+        "name": "現在の行程",
+        "state": {
+          "wash": "洗い",
+          "rinse": "すすぎ",
+          "spin": "脱水",
+          "dry": "乾燥",
+          "soft_keep": "ふんわりキープ"
+        }
+      },
+      "mode": {
+        "name": "運転モード",
+        "state": {
+          "none": "なし",
+          "wash_dry": "洗濯乾燥",
+          "wash": "洗濯",
+          "dry": "乾燥",
+          "clean_care": "クリーンケア",
+          "care": "ケア"
+        }
+      },
+      "program": {
+        "name": "コース",
+        "state": {
+          "none": "なし",
+          "standard": "標準",
+          "tub_clean": "槽洗浄",
+          "fast": "お急ぎ",
+          "careful": "念入り",
+          "sixty_wash": "60℃洗浄",
+          "blanket": "毛布",
+          "delicate": "おしゃれ着",
+          "tub_clean_dry": "槽乾燥",
+          "memory": "お好み",
+          "sterilization": "除菌",
+          "mute": "静音",
+          "soft": "ふんわり",
+          "delicate_dryer": "おしゃれ着乾燥",
+          "soak": "つけおき",
+          "odor_eliminating": "消臭",
+          "empty": "空運転",
+          "degerm": "除菌洗い",
+          "auto_care": "自動お手入れ",
+          "auto_twice_wash": "自動2度洗い",
+          "prewash_plus": "予洗いプラス",
+          "uv_wash_and_dry": "UV 洗濯乾燥",
+          "uv_dry_with_rotation": "UV 乾燥（回転あり）",
+          "uv_dry_without_rotation": "UV 乾燥（回転なし）",
+          "forty_five_wash": "45℃洗浄",
+          "fragrant_and_delicate": "香りしっとり",
+          "tick_extermination": "ダニ対策",
+          "pollen": "花粉",
+          "app_course_1": "アプリコース 1",
+          "app_course_2": "アプリコース 2",
+          "app_course_3": "アプリコース 3",
+          "app_course": "アプリコース",
+          "uv_wash": "UV 洗浄",
+          "uv_without_rotation": "UV（回転なし）",
+          "uv_with_rotation": "UV（回転あり）",
+          "uv_deodorize_without_rotation": "UV 消臭（回転なし）",
+          "uv_deodorize_with_rotation": "UV 消臭（回転あり）",
+          "60_tub_clean": "60℃槽洗浄",
+          "tub_clean_wash_dry": "槽洗浄（洗濯乾燥）",
+          "sheets": "シーツ",
+          "lace_curtain": "レースカーテン",
+          "towel": "タオル",
+          "fleece": "フリース",
+          "school_uniform_or_washable": "制服・ウォッシャブル",
+          "slacks_skirt": "スラックス・スカート",
+          "jeans": "ジーンズ",
+          "cap": "帽子",
+          "down_jacket": "ダウンジャケット",
+          "bet_putt": "ペット用品",
+          "functional_underwear": "機能性インナー",
+          "reusable_bag": "エコバッグ",
+          "duvet": "布団",
+          "t_shirt_recovery": "Tシャツ復元",
+          "sports_wear": "スポーツウェア",
+          "light_dirt": "軽い汚れ",
+          "wash_thoroughly_and_rinse": "しっかり洗い・すすぎ",
+          "quick_wash_and_dry": "お急ぎ洗濯乾燥",
+          "yellowing_off": "黄ばみ落とし",
+          "disinfection_clothing": "衣類除菌",
+          "keep_water_temperature": "水温キープ",
+          "prewash": "予洗い",
+          "super_concentrated_soak": "超濃縮つけおき",
+          "no_rinse_and_delicate": "すすぎなし・おしゃれ着",
+          "t_shirt_recovery_pro": "Tシャツ復元 Pro",
+          "customize": "カスタマイズ"
+        }
+      },
+      "error_code": {
+        "name": "エラーコード"
+      }
+    },
+    "binary_sensor": {
+      "door_open": {
+        "name": "ドア"
+      },
+      "drain_filter_clean": {
+        "name": "排水フィルター要掃除"
+      },
+      "dry_filter_clean": {
+        "name": "乾燥フィルター要掃除"
+      }
+    }
+  }
+}

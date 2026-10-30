@@ -51,8 +51,8 @@
         "state": {
           "none": "无",
           "wash_dry": "洗烘",
-          "wash": "只洗",
-          "dry": "只烘",
+          "wash": "洗涤",
+          "dry": "烘干",
           "clean_care": "清洁护理",
           "care": "护理"
         }

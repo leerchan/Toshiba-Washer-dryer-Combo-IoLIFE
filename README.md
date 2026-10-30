@@ -4,7 +4,9 @@
 
 Home Assistant integration for Japanese-market Toshiba washer-dryers that use the **IoLIFE** app (tested with the TW-127XP2R). It talks to the washer over the LAN using stock [midea-local](https://github.com/midea-lan/midea-local); the IoLIFE account is only used once, during setup, to fetch the washer's LAN key.
 
-[中文说明](#中文说明)
+[中文说明](#中文说明) · [日本語](#日本語)
+
+The UI is translated into English, Simplified Chinese and Japanese.
 
 ## Installation (HACS)
 
@@ -37,7 +39,7 @@ Entity IDs assume the device is named "Washer". The integration is read-only: it
 
 ## Live Activity example
 
-[`examples/live_activity.yaml`](examples/live_activity.yaml) is an automation that pushes the course progress to the Home Assistant Companion app as an iOS Live Activity / Android live notification. Paste it into a new automation (Edit in YAML) and change `notify_target` to your phone.
+[`examples/live_activity.en.yaml`](examples/live_activity.en.yaml) is an automation that pushes the course progress to the Home Assistant Companion app as an iOS Live Activity / Android live notification. Paste it into a new automation (Edit in YAML) and change `notify_target` to your phone. Chinese and Japanese copies: [`live_activity.zh-Hans.yaml`](examples/live_activity.zh-Hans.yaml), [`live_activity.ja.yaml`](examples/live_activity.ja.yaml).
 
 ## Development
 
@@ -56,7 +58,17 @@ pytest tests
 
 **注意：需要 Home Assistant 2026.11 或更高版本。** 本集成依赖 midea-local 14.0.0 及以上，HA 从 2026.11 起才内置该版本（2026.10.x 为 12.2.0），旧版 HA 无法加载。
 
-洗衣机关机后 Wi-Fi 会休眠，实体显示「不可用」，开机后 5 秒内恢复。实时活动通知示例见 [`examples/live_activity.yaml`](examples/live_activity.yaml)。
+洗衣机关机后 Wi-Fi 会休眠，实体显示「不可用」，开机后 5 秒内恢复。实时活动通知示例见 [`examples/live_activity.zh-Hans.yaml`](examples/live_activity.zh-Hans.yaml)。
+
+## 日本語
+
+**IoLIFE** アプリに対応した日本向け東芝ドラム式洗濯乾燥機用のインテグレーションです（TW-127XP2R で動作確認済み）。LAN 経由で洗濯機と直接通信し、IoLIFE アカウントは設定時に洗濯機の LAN キーを取得するために一度だけ使います。
+
+**インストール：** HACS → ⋮ → カスタムリポジトリ → `https://github.com/leerchan/Toshiba-Washer-dryer-Combo-IoLIFE` を追加、カテゴリは「インテグレーション」→ ダウンロード → HA を再起動 → 設定 → デバイスとサービス → インテグレーションを追加 → *Toshiba Washer-dryer Combo IoLIFE* を検索し、IoLIFE のメールアドレス・パスワード・洗濯機の IP アドレスを入力します。設定中は洗濯機の電源を入れておいてください（パネル点灯）。
+
+**注意：Home Assistant 2026.11 以降が必要です。** 本インテグレーションは midea-local 14.0.0 以上に依存しており、HA に同梱されるのは 2026.11 からです（2026.10.x は 12.2.0）。それより古い HA では読み込めません。
+
+洗濯機の電源を切ると Wi-Fi がスリープし、エンティティは「利用不可」になります。電源を入れると 5 秒以内に復帰します。ライブアクティビティ通知のサンプルは [`examples/live_activity.ja.yaml`](examples/live_activity.ja.yaml) を参照してください。
 
 ## License
 
