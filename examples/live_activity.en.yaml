@@ -1,15 +1,71 @@
-# Toshiba washer (toshiba_washer integration) Live Activity
-# Settings → Automations → Create → ⋮ → Edit in YAML → paste.
-# Entities use the default names sensor.washer_*; if you renamed the device, replace "washer_" everywhere.
-alias: Toshiba washer Live Activity
+# Toshiba washer (toshiba_washer integration) Live Activity blueprint
+# Import: Settings → Automations & Scenes → Blueprints → Import Blueprint → paste this file's GitHub URL; then create an automation from it and pick each entity.
+blueprint:
+  name: Toshiba washer Live Activity
+  description: >
+    Pushes the course progress to the Companion app as an iOS Live Activity / Android live notification: alerts on each stage change and quietly advances the progress every 5 minutes while running, plus error and filter-cleaning reminders. Pick each entity; nothing depends on entity ID naming.
+  domain: automation
+  source_url: https://github.com/leerchan/Toshiba-Washer-dryer-Combo-IoLIFE/blob/main/examples/live_activity.en.yaml
+  input:
+    notify_target:
+      name: Notify action
+      description: The notify action of a phone or notify group, e.g. notify.mobile_app_iphone
+      selector:
+        text:
+    status_entity:
+      name: Status
+      selector: &sensor
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: sensor
+    stage_entity:
+      name: Stage
+      selector: *sensor
+    finish_time_entity:
+      name: Finish time
+      selector:
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: sensor
+              device_class: timestamp
+    mode_entity:
+      name: Mode
+      selector: *sensor
+    program_entity:
+      name: Program
+      selector: *sensor
+    error_code_entity:
+      name: Error code
+      selector: *sensor
+    door_entity:
+      name: Door
+      selector:
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: binary_sensor
+              device_class: door
+    drain_filter_entity:
+      name: Drain filter needs cleaning
+      selector: &problem
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: binary_sensor
+              device_class: problem
+    dryer_filter_entity:
+      name: Dryer filter needs cleaning
+      selector: *problem
 mode: queued
 triggers:
   - trigger: state # wash → rinse → spin → dry → soft keep; the first stage after starting also lands here
-    entity_id: sensor.washer_stage
+    entity_id: !input stage_entity
     not_to: [unknown, unavailable]
     id: stage
   - trigger: state # resumed after pause (stage unchanged, so the trigger above does not fire)
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     from: pause
     to: start
     id: stage
@@ -17,37 +73,43 @@ triggers:
     minutes: /5
     id: tick
   - trigger: state
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     to: pause
     id: pause
   - trigger: state
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     to: end
     id: end
   - trigger: state # cancelled midway / switched off
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     from: [start, pause]
     to: [idle, standby]
     id: clear
   - trigger: state # door opened after finishing to take the laundry out → dismiss the card
-    entity_id: binary_sensor.washer_door
+    entity_id: !input door_entity
     to: "on"
     id: door
   - trigger: state
-    entity_id: sensor.washer_error_code
+    entity_id: !input error_code_entity
     not_to: ["0", unknown, unavailable]
     id: error
   - trigger: state # filter needs cleaning → remind; cleaned → dismiss
     entity_id:
-      - binary_sensor.washer_drain_filter_needs_cleaning
-      - binary_sensor.washer_dryer_filter_needs_cleaning
+      - !input drain_filter_entity
+      - !input dryer_filter_entity
     from: ["on", "off"]
     to: ["on", "off"]
     id: filter
 variables:
-  notify_target: notify.mobile_app_iphone # ← your phone's notify action
-  stage: "{{ states('sensor.washer_stage') }}"
-  mode: "{{ states('sensor.washer_mode') }}"
+  notify_target: !input notify_target
+  status_entity: !input status_entity
+  stage_entity: !input stage_entity
+  finish_time_entity: !input finish_time_entity
+  mode_entity: !input mode_entity
+  program_entity: !input program_entity
+  dryer_filter_entity: !input dryer_filter_entity
+  stage: "{{ states(stage_entity) }}"
+  mode: "{{ states(mode_entity) }}"
   names: { wash: Wash, rinse: Rinse, spin: Spin, dry: Dry, soft_keep: Soft keep }
   # Share of the progress bar each stage takes per mode [start, end]; soft keep is not counted, entering it means 100
   bands:
@@ -61,19 +123,19 @@ variables:
   progress: >
     {% if stage == 'soft_keep' %}100{% else %}
     {% set lo, hi = band[0], band[1] %}
-    {% set t = as_timestamp(now()) - as_timestamp(states.sensor.washer_stage.last_changed) %}
-    {% set end = as_timestamp(states('sensor.washer_finish_time'), 0) %}
+    {% set t = as_timestamp(now()) - as_timestamp((expand(stage_entity) | first).last_changed) %}
+    {% set end = as_timestamp(states(finish_time_entity), 0) %}
     {% set stage_left = [end - as_timestamp(now()), 0] | max * (hi - lo) / (100 - lo) %}
     {% set p = lo + (hi - lo) * t / (t + stage_left) if end and t + stage_left > 0 else lo %}
     {{ [p | int, hi - 1] | min }}{% endif %}
-  title: "Washer · {{ state_translated('sensor.washer_mode') }}"
+  title: "Washer · {{ state_translated(mode_entity) }}"
   icon: "{{ 'mdi:tumble-dryer' if mode == 'dry' else 'mdi:washing-machine' }}"
-  program: "{{ state_translated('sensor.washer_program') }}"
-  end_ts: "{{ as_timestamp(states('sensor.washer_finish_time'), 0) | int }}"
+  program: "{{ state_translated(program_entity) }}"
+  end_ts: "{{ as_timestamp(states(finish_time_entity), 0) | int }}"
 actions:
   - choose:
       - conditions: >
-          {{ trigger.id in ['stage', 'tick'] and is_state('sensor.washer_status', 'start') }}
+          {{ trigger.id in ['stage', 'tick'] and is_state(status_entity, 'start') }}
         sequence:
           - action: "{{ notify_target }}"
             data:
@@ -142,7 +204,7 @@ actions:
             data:
               title: Washer
               message: >
-                {{ 'Dryer' if 'dryer' in trigger.entity_id else 'Drain' }} filter needs cleaning
+                {{ 'Dryer' if trigger.entity_id == dryer_filter_entity else 'Drain' }} filter needs cleaning
               data:
                 tag: "toshiba_washer_{{ trigger.to_state.object_id }}"
                 notification_icon: mdi:air-filter
@@ -155,7 +217,7 @@ actions:
                 tag: "toshiba_washer_{{ trigger.to_state.object_id }}"
       - conditions: >
           {{ trigger.id == 'clear'
-             or (trigger.id == 'door' and is_state('sensor.washer_status', 'end')) }}
+             or (trigger.id == 'door' and is_state(status_entity, 'end')) }}
         sequence:
           - action: "{{ notify_target }}"
             data:

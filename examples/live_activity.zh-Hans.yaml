@@ -1,15 +1,71 @@
-# 东芝洗衣机（toshiba_washer 集成）实时活动
-# 设置 → 自动化 → 新建 → ⋮ → 以 YAML 编辑 → 粘贴。
-# 实体按集成默认名 sensor.washer_* 写的；设备改过名就全局替换「washer_」。
-alias: 东芝洗衣机实时活动
+# 东芝洗衣机（toshiba_washer 集成）实时活动蓝图
+# 导入：设置 → 自动化与场景 → 蓝图 → 导入蓝图 → 粘贴本文件的 GitHub 地址；然后从蓝图创建自动化，逐个选择实体。
+blueprint:
+  name: 东芝洗衣机实时活动
+  description: >
+    把洗衣进度以 iOS 实时活动 / Android 实时通知推送到 Companion App：换阶段时弹出提醒，运行中每 5 分钟静默推进进度；另有故障和过滤器清理提醒。实体请逐个选择，不依赖实体 ID 命名。
+  domain: automation
+  source_url: https://github.com/leerchan/Toshiba-Washer-dryer-Combo-IoLIFE/blob/main/examples/live_activity.zh-Hans.yaml
+  input:
+    notify_target:
+      name: 通知动作
+      description: 手机或通知组的 notify 动作，例如 notify.mobile_app_iphone
+      selector:
+        text:
+    status_entity:
+      name: 状态
+      selector: &sensor
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: sensor
+    stage_entity:
+      name: 当前阶段
+      selector: *sensor
+    finish_time_entity:
+      name: 预计完成时间
+      selector:
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: sensor
+              device_class: timestamp
+    mode_entity:
+      name: 运行模式
+      selector: *sensor
+    program_entity:
+      name: 程序
+      selector: *sensor
+    error_code_entity:
+      name: 故障代码
+      selector: *sensor
+    door_entity:
+      name: 门
+      selector:
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: binary_sensor
+              device_class: door
+    drain_filter_entity:
+      name: 排水过滤器需清理
+      selector: &problem
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: binary_sensor
+              device_class: problem
+    dryer_filter_entity:
+      name: 烘干过滤器需清理
+      selector: *problem
 mode: queued
 triggers:
   - trigger: state # 洗涤 → 漂洗 → 脱水 → 烘干 → 防皱，开机后第一个阶段也走这里
-    entity_id: sensor.washer_stage
+    entity_id: !input stage_entity
     not_to: [unknown, unavailable]
     id: stage
   - trigger: state # 暂停后继续（阶段没变，不会触发上面那条）
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     from: pause
     to: start
     id: stage
@@ -17,37 +73,43 @@ triggers:
     minutes: /5
     id: tick
   - trigger: state
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     to: pause
     id: pause
   - trigger: state
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     to: end
     id: end
   - trigger: state # 中途取消 / 关机
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     from: [start, pause]
     to: [idle, standby]
     id: clear
   - trigger: state # 洗完开门取衣服 → 收起卡片
-    entity_id: binary_sensor.washer_door
+    entity_id: !input door_entity
     to: "on"
     id: door
   - trigger: state
-    entity_id: sensor.washer_error_code
+    entity_id: !input error_code_entity
     not_to: ["0", unknown, unavailable]
     id: error
   - trigger: state # 过滤器需要清理 → 提醒；清理后 → 收起
     entity_id:
-      - binary_sensor.washer_drain_filter_needs_cleaning
-      - binary_sensor.washer_dryer_filter_needs_cleaning
+      - !input drain_filter_entity
+      - !input dryer_filter_entity
     from: ["on", "off"]
     to: ["on", "off"]
     id: filter
 variables:
-  notify_target: notify.mobile_app_iphone # ← 你的手机 notify 动作
-  stage: "{{ states('sensor.washer_stage') }}"
-  mode: "{{ states('sensor.washer_mode') }}"
+  notify_target: !input notify_target
+  status_entity: !input status_entity
+  stage_entity: !input stage_entity
+  finish_time_entity: !input finish_time_entity
+  mode_entity: !input mode_entity
+  program_entity: !input program_entity
+  dryer_filter_entity: !input dryer_filter_entity
+  stage: "{{ states(stage_entity) }}"
+  mode: "{{ states(mode_entity) }}"
   names: { wash: 洗涤, rinse: 漂洗, spin: 脱水, dry: 烘干, soft_keep: 防皱 }
   # 每种运行模式下各阶段在进度条上占的区间 [起, 止]；防皱不计入进度，进入防皱即 100
   bands:
@@ -61,19 +123,19 @@ variables:
   progress: >
     {% if stage == 'soft_keep' %}100{% else %}
     {% set lo, hi = band[0], band[1] %}
-    {% set t = as_timestamp(now()) - as_timestamp(states.sensor.washer_stage.last_changed) %}
-    {% set end = as_timestamp(states('sensor.washer_finish_time'), 0) %}
+    {% set t = as_timestamp(now()) - as_timestamp((expand(stage_entity) | first).last_changed) %}
+    {% set end = as_timestamp(states(finish_time_entity), 0) %}
     {% set stage_left = [end - as_timestamp(now()), 0] | max * (hi - lo) / (100 - lo) %}
     {% set p = lo + (hi - lo) * t / (t + stage_left) if end and t + stage_left > 0 else lo %}
     {{ [p | int, hi - 1] | min }}{% endif %}
-  title: "洗衣机 · {{ state_translated('sensor.washer_mode') }}"
+  title: "洗衣机 · {{ state_translated(mode_entity) }}"
   icon: "{{ 'mdi:tumble-dryer' if mode == 'dry' else 'mdi:washing-machine' }}"
-  program: "{{ state_translated('sensor.washer_program') }}"
-  end_ts: "{{ as_timestamp(states('sensor.washer_finish_time'), 0) | int }}"
+  program: "{{ state_translated(program_entity) }}"
+  end_ts: "{{ as_timestamp(states(finish_time_entity), 0) | int }}"
 actions:
   - choose:
       - conditions: >
-          {{ trigger.id in ['stage', 'tick'] and is_state('sensor.washer_status', 'start') }}
+          {{ trigger.id in ['stage', 'tick'] and is_state(status_entity, 'start') }}
         sequence:
           - action: "{{ notify_target }}"
             data:
@@ -142,7 +204,7 @@ actions:
             data:
               title: 洗衣机
               message: >
-                {{ '烘干' if 'dryer' in trigger.entity_id else '排水' }}过滤器需要清理
+                {{ '烘干' if trigger.entity_id == dryer_filter_entity else '排水' }}过滤器需要清理
               data:
                 tag: "toshiba_washer_{{ trigger.to_state.object_id }}"
                 notification_icon: mdi:air-filter
@@ -155,7 +217,7 @@ actions:
                 tag: "toshiba_washer_{{ trigger.to_state.object_id }}"
       - conditions: >
           {{ trigger.id == 'clear'
-             or (trigger.id == 'door' and is_state('sensor.washer_status', 'end')) }}
+             or (trigger.id == 'door' and is_state(status_entity, 'end')) }}
         sequence:
           - action: "{{ notify_target }}"
             data:

@@ -1,15 +1,71 @@
-# 東芝洗濯機（toshiba_washer インテグレーション）ライブアクティビティ
-# 設定 → オートメーション → 新規作成 → ⋮ → YAML で編集 → 貼り付け。
-# エンティティはデフォルト名 sensor.washer_* で書いています。デバイス名を変えた場合は「washer_」を一括置換してください。
-alias: 東芝洗濯機ライブアクティビティ
+# 東芝洗濯機（toshiba_washer インテグレーション）ライブアクティビティ ブループリント
+# インポート：設定 → オートメーションとシーン → ブループリント → ブループリントをインポート → このファイルの GitHub URL を貼り付け。その後ブループリントからオートメーションを作成し、エンティティを一つずつ選択します。
+blueprint:
+  name: 東芝洗濯機ライブアクティビティ
+  description: >
+    洗濯の進捗を iOS ライブアクティビティ / Android ライブ通知として Companion アプリに送ります。行程が変わると通知し、運転中は 5 分ごとに静かに進捗を更新します。エラーとフィルター掃除の通知もあります。エンティティは一つずつ選択するので、エンティティ ID の命名に依存しません。
+  domain: automation
+  source_url: https://github.com/leerchan/Toshiba-Washer-dryer-Combo-IoLIFE/blob/main/examples/live_activity.ja.yaml
+  input:
+    notify_target:
+      name: 通知アクション
+      description: スマホまたは通知グループの notify アクション（例：notify.mobile_app_iphone）
+      selector:
+        text:
+    status_entity:
+      name: 状態
+      selector: &sensor
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: sensor
+    stage_entity:
+      name: 現在の行程
+      selector: *sensor
+    finish_time_entity:
+      name: 終了予定時刻
+      selector:
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: sensor
+              device_class: timestamp
+    mode_entity:
+      name: 運転モード
+      selector: *sensor
+    program_entity:
+      name: コース
+      selector: *sensor
+    error_code_entity:
+      name: エラーコード
+      selector: *sensor
+    door_entity:
+      name: ドア
+      selector:
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: binary_sensor
+              device_class: door
+    drain_filter_entity:
+      name: 排水フィルター要掃除
+      selector: &problem
+        entity:
+          filter:
+            - integration: toshiba_washer
+              domain: binary_sensor
+              device_class: problem
+    dryer_filter_entity:
+      name: 乾燥フィルター要掃除
+      selector: *problem
 mode: queued
 triggers:
   - trigger: state # 洗い → すすぎ → 脱水 → 乾燥 → ふんわりキープ。運転開始後の最初の行程もここ
-    entity_id: sensor.washer_stage
+    entity_id: !input stage_entity
     not_to: [unknown, unavailable]
     id: stage
   - trigger: state # 一時停止から再開（行程は変わらないので上のトリガーは発火しない）
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     from: pause
     to: start
     id: stage
@@ -17,37 +73,43 @@ triggers:
     minutes: /5
     id: tick
   - trigger: state
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     to: pause
     id: pause
   - trigger: state
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     to: end
     id: end
   - trigger: state # 途中で取り消し / 電源オフ
-    entity_id: sensor.washer_status
+    entity_id: !input status_entity
     from: [start, pause]
     to: [idle, standby]
     id: clear
   - trigger: state # 終了後にドアを開けて取り出したら → カードを消す
-    entity_id: binary_sensor.washer_door
+    entity_id: !input door_entity
     to: "on"
     id: door
   - trigger: state
-    entity_id: sensor.washer_error_code
+    entity_id: !input error_code_entity
     not_to: ["0", unknown, unavailable]
     id: error
   - trigger: state # フィルター要掃除 → 通知、掃除後 → 消す
     entity_id:
-      - binary_sensor.washer_drain_filter_needs_cleaning
-      - binary_sensor.washer_dryer_filter_needs_cleaning
+      - !input drain_filter_entity
+      - !input dryer_filter_entity
     from: ["on", "off"]
     to: ["on", "off"]
     id: filter
 variables:
-  notify_target: notify.mobile_app_iphone # ← お使いのスマホの notify アクション
-  stage: "{{ states('sensor.washer_stage') }}"
-  mode: "{{ states('sensor.washer_mode') }}"
+  notify_target: !input notify_target
+  status_entity: !input status_entity
+  stage_entity: !input stage_entity
+  finish_time_entity: !input finish_time_entity
+  mode_entity: !input mode_entity
+  program_entity: !input program_entity
+  dryer_filter_entity: !input dryer_filter_entity
+  stage: "{{ states(stage_entity) }}"
+  mode: "{{ states(mode_entity) }}"
   names: { wash: 洗い, rinse: すすぎ, spin: 脱水, dry: 乾燥, soft_keep: ふんわりキープ }
   # 運転モードごとに各行程が進捗バー上で占める区間 [開始, 終了]。ふんわりキープは進捗に含めず、入った時点で 100
   bands:
@@ -61,19 +123,19 @@ variables:
   progress: >
     {% if stage == 'soft_keep' %}100{% else %}
     {% set lo, hi = band[0], band[1] %}
-    {% set t = as_timestamp(now()) - as_timestamp(states.sensor.washer_stage.last_changed) %}
-    {% set end = as_timestamp(states('sensor.washer_finish_time'), 0) %}
+    {% set t = as_timestamp(now()) - as_timestamp((expand(stage_entity) | first).last_changed) %}
+    {% set end = as_timestamp(states(finish_time_entity), 0) %}
     {% set stage_left = [end - as_timestamp(now()), 0] | max * (hi - lo) / (100 - lo) %}
     {% set p = lo + (hi - lo) * t / (t + stage_left) if end and t + stage_left > 0 else lo %}
     {{ [p | int, hi - 1] | min }}{% endif %}
-  title: "洗濯機 · {{ state_translated('sensor.washer_mode') }}"
+  title: "洗濯機 · {{ state_translated(mode_entity) }}"
   icon: "{{ 'mdi:tumble-dryer' if mode == 'dry' else 'mdi:washing-machine' }}"
-  program: "{{ state_translated('sensor.washer_program') }}"
-  end_ts: "{{ as_timestamp(states('sensor.washer_finish_time'), 0) | int }}"
+  program: "{{ state_translated(program_entity) }}"
+  end_ts: "{{ as_timestamp(states(finish_time_entity), 0) | int }}"
 actions:
   - choose:
       - conditions: >
-          {{ trigger.id in ['stage', 'tick'] and is_state('sensor.washer_status', 'start') }}
+          {{ trigger.id in ['stage', 'tick'] and is_state(status_entity, 'start') }}
         sequence:
           - action: "{{ notify_target }}"
             data:
@@ -142,7 +204,7 @@ actions:
             data:
               title: 洗濯機
               message: >
-                {{ '乾燥' if 'dryer' in trigger.entity_id else '排水' }}フィルターの掃除が必要です
+                {{ '乾燥' if trigger.entity_id == dryer_filter_entity else '排水' }}フィルターの掃除が必要です
               data:
                 tag: "toshiba_washer_{{ trigger.to_state.object_id }}"
                 notification_icon: mdi:air-filter
@@ -155,7 +217,7 @@ actions:
                 tag: "toshiba_washer_{{ trigger.to_state.object_id }}"
       - conditions: >
           {{ trigger.id == 'clear'
-             or (trigger.id == 'door' and is_state('sensor.washer_status', 'end')) }}
+             or (trigger.id == 'door' and is_state(status_entity, 'end')) }}
         sequence:
           - action: "{{ notify_target }}"
             data:
