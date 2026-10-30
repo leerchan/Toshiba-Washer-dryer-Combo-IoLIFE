@@ -1,0 +1,2 @@
+pytest-homeassistant-custom-component
+midea-local==14.0.0

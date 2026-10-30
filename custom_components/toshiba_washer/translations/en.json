@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Toshiba washer (IoLIFE)",
+        "description": "Sign in once with your IoLIFE account to fetch the washer's LAN key. Keep the washer powered on (panel lit) during setup.",
+        "data": {
+          "email": "IoLIFE email",
+          "password": "IoLIFE password",
+          "ip_address": "Washer IP address"
+        }
+      }
+    },
+    "error": {
+      "login_failed": "IoLIFE login failed. Check the email and password.",
+      "no_washer": "No washer found in this IoLIFE account.",
+      "cannot_connect": "Could not reach the washer on the LAN. Is it powered on and is the IP right?",
+      "unknown": "Unexpected error, see the Home Assistant log."
+    },
+    "abort": {
+      "already_configured": "This washer is already set up."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "idle": "Idle",
+          "standby": "Standby",
+          "start": "Start",
+          "pause": "Pause",
+          "end": "End"
+        }
+      },
+      "finish_time": {
+        "name": "Finish time"
+      },
+      "stage": {
+        "name": "Stage",
+        "state": {
+          "wash": "Wash",
+          "rinse": "Rinse",
+          "spin": "Spin",
+          "dry": "Dry",
+          "soft_keep": "Soft keep"
+        }
+      },
+      "mode": {
+        "name": "Mode",
+        "state": {
+          "none": "None",
+          "wash_dry": "Wash dry",
+          "wash": "Wash",
+          "dry": "Dry",
+          "clean_care": "Clean care",
+          "care": "Care"
+        }
+      },
+      "program": {
+        "name": "Program",
+        "state": {
+          "none": "None",
+          "standard": "Standard",
+          "tub_clean": "Tub clean",
+          "fast": "Fast",
+          "careful": "Careful",
+          "sixty_wash": "Sixty wash",
+          "blanket": "Blanket",
+          "delicate": "Delicate",
+          "tub_clean_dry": "Tub clean dry",
+          "memory": "Memory",
+          "sterilization": "Sterilization",
+          "mute": "Mute",
+          "soft": "Soft",
+          "delicate_dryer": "Delicate dryer",
+          "soak": "Soak",
+          "odor_eliminating": "Odor eliminating",
+          "empty": "Empty",
+          "degerm": "Degerm",
+          "auto_care": "Auto care",
+          "auto_twice_wash": "Auto twice wash",
+          "prewash_plus": "Prewash plus",
+          "uv_wash_and_dry": "Uv wash and dry",
+          "uv_dry_with_rotation": "Uv dry with rotation",
+          "uv_dry_without_rotation": "Uv dry without rotation",
+          "forty_five_wash": "Forty five wash",
+          "fragrant_and_delicate": "Fragrant and delicate",
+          "tick_extermination": "Tick extermination",
+          "pollen": "Pollen",
+          "app_course_1": "App course 1",
+          "app_course_2": "App course 2",
+          "app_course_3": "App course 3",
+          "app_course": "App course",
+          "uv_wash": "Uv wash",
+          "uv_without_rotation": "Uv without rotation",
+          "uv_with_rotation": "Uv with rotation",
+          "uv_deodorize_without_rotation": "Uv deodorize without rotation",
+          "uv_deodorize_with_rotation": "Uv deodorize with rotation",
+          "60_tub_clean": "60 tub clean",
+          "tub_clean_wash_dry": "Tub clean wash dry",
+          "sheets": "Sheets",
+          "lace_curtain": "Lace curtain",
+          "towel": "Towel",
+          "fleece": "Fleece",
+          "school_uniform_or_washable": "School uniform or washable",
+          "slacks_skirt": "Slacks skirt",
+          "jeans": "Jeans",
+          "cap": "Cap",
+          "down_jacket": "Down jacket",
+          "bet_putt": "Bet putt",
+          "functional_underwear": "Functional underwear",
+          "reusable_bag": "Reusable bag",
+          "duvet": "Duvet",
+          "t_shirt_recovery": "T shirt recovery",
+          "sports_wear": "Sports wear",
+          "light_dirt": "Light dirt",
+          "wash_thoroughly_and_rinse": "Wash thoroughly and rinse",
+          "quick_wash_and_dry": "Quick wash and dry",
+          "yellowing_off": "Yellowing off",
+          "disinfection_clothing": "Disinfection clothing",
+          "keep_water_temperature": "Keep water temperature",
+          "prewash": "Prewash",
+          "super_concentrated_soak": "Super concentrated soak",
+          "no_rinse_and_delicate": "No rinse and delicate",
+          "t_shirt_recovery_pro": "T shirt recovery pro",
+          "customize": "Customize"
+        }
+      },
+      "error_code": {
+        "name": "Error code"
+      }
+    },
+    "binary_sensor": {
+      "door_open": {
+        "name": "Door"
+      },
+      "drain_filter_clean": {
+        "name": "Drain filter needs cleaning"
+      },
+      "dry_filter_clean": {
+        "name": "Dryer filter needs cleaning"
+      }
+    }
+  }
+}

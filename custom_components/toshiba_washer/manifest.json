@@ -1,0 +1,12 @@
+{
+  "domain": "toshiba_washer",
+  "name": "Toshiba Washer-dryer Combo IoLIFE",
+  "codeowners": ["@leerchan"],
+  "config_flow": true,
+  "documentation": "https://github.com/leerchan/Toshiba-Washer-dryer-Combo-IoLIFE",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/leerchan/Toshiba-Washer-dryer-Combo-IoLIFE/issues",
+  "requirements": ["midea-local==14.0.0"],
+  "version": "0.1.0"
+}

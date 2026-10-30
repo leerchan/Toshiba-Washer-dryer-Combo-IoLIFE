@@ -1,0 +1,164 @@
+# 东芝洗衣机（toshiba_washer 集成）实时活动
+# 设置 → 自动化 → 新建 → ⋮ → 以 YAML 编辑 → 粘贴。
+# 实体按集成默认名 sensor.washer_* 写的；设备改过名就全局替换「washer_」。
+alias: 东芝洗衣机实时活动
+mode: queued
+triggers:
+  - trigger: state # 洗涤 → 漂洗 → 脱水 → 烘干 → 防皱，开机后第一个阶段也走这里
+    entity_id: sensor.washer_stage
+    not_to: [unknown, unavailable]
+    id: stage
+  - trigger: state # 暂停后继续（阶段没变，不会触发上面那条）
+    entity_id: sensor.washer_status
+    from: pause
+    to: start
+    id: stage
+  - trigger: time_pattern # 运行中每 5 分钟静默推进一次进度条
+    minutes: /5
+    id: tick
+  - trigger: state
+    entity_id: sensor.washer_status
+    to: pause
+    id: pause
+  - trigger: state
+    entity_id: sensor.washer_status
+    to: end
+    id: end
+  - trigger: state # 中途取消 / 关机
+    entity_id: sensor.washer_status
+    from: [start, pause]
+    to: [idle, standby]
+    id: clear
+  - trigger: state # 洗完开门取衣服 → 收起卡片
+    entity_id: binary_sensor.washer_door
+    to: "on"
+    id: door
+  - trigger: state
+    entity_id: sensor.washer_error_code
+    not_to: ["0", unknown, unavailable]
+    id: error
+  - trigger: state # 过滤器需要清理 → 提醒；清理后 → 收起
+    entity_id:
+      - binary_sensor.washer_drain_filter_needs_cleaning
+      - binary_sensor.washer_dryer_filter_needs_cleaning
+    from: ["on", "off"]
+    to: ["on", "off"]
+    id: filter
+variables:
+  notify_target: notify.mobile_app_iphone # ← 你的手机 notify 动作
+  stage: "{{ states('sensor.washer_stage') }}"
+  mode: "{{ states('sensor.washer_mode') }}"
+  names: { wash: 洗涤, rinse: 漂洗, spin: 脱水, dry: 烘干, soft_keep: 防皱 }
+  # 每种运行模式下各阶段在进度条上占的区间 [起, 止]；防皱不计入进度，进入防皱即 100
+  bands:
+    wash_dry: { wash: [0, 25], rinse: [25, 45], spin: [45, 60], dry: [60, 100] }
+    wash: { wash: [0, 40], rinse: [40, 70], spin: [70, 100] }
+    dry: { dry: [0, 100] }
+  band: "{{ bands.get(mode, bands.wash_dry).get(stage, [0, 5]) }}"
+  # 区间内按时间走：本阶段已用时间 /（已用 + 本阶段预计剩余），
+  # 本阶段预计剩余 = 总剩余 × 本阶段占剩余进度的比例。到区间终点前停住，不会提前满。
+  # ponytail: 阶段用时取自 last_changed，HA 重启后会从区间起点重新走
+  progress: >
+    {% if stage == 'soft_keep' %}100{% else %}
+    {% set lo, hi = band[0], band[1] %}
+    {% set t = as_timestamp(now()) - as_timestamp(states.sensor.washer_stage.last_changed) %}
+    {% set end = as_timestamp(states('sensor.washer_finish_time'), 0) %}
+    {% set stage_left = [end - as_timestamp(now()), 0] | max * (hi - lo) / (100 - lo) %}
+    {% set p = lo + (hi - lo) * t / (t + stage_left) if end and t + stage_left > 0 else lo %}
+    {{ [p | int, hi - 1] | min }}{% endif %}
+  title: "洗衣机 · {{ state_translated('sensor.washer_mode') }}"
+  icon: "{{ 'mdi:tumble-dryer' if mode == 'dry' else 'mdi:washing-machine' }}"
+  program: "{{ state_translated('sensor.washer_program') }}"
+  end_ts: "{{ as_timestamp(states('sensor.washer_finish_time'), 0) | int }}"
+actions:
+  - choose:
+      - conditions: >
+          {{ trigger.id in ['stage', 'tick'] and is_state('sensor.washer_status', 'start') }}
+        sequence:
+          - action: "{{ notify_target }}"
+            data:
+              title: "{{ title }}"
+              message: "{{ program }} · {{ names.get(stage, '运行中') }}"
+              # 换阶段时弹出提醒；定时推进加 silent / alert_once，不打扰
+              data: >
+                {% set d = dict(tag='toshiba_washer', live_update=true,
+                     critical_text=names.get(stage, '运行中'),
+                     progress=progress, progress_max=100, notification_icon=icon,
+                     notification_icon_color='#2196F3', color='#2196F3') %}
+                {% if end_ts > as_timestamp(now()) %}
+                  {% set d = dict(d, chronometer=true, when=end_ts) %}
+                {% endif %}
+                {% if trigger.id == 'tick' %}
+                  {% set d = dict(d, silent=true, alert_once=true) %}
+                {% endif %}
+                {{ d }}
+      - conditions: "{{ trigger.id == 'pause' }}"
+        sequence:
+          - action: "{{ notify_target }}"
+            data:
+              title: "{{ title }}"
+              message: "{{ program }} · 已暂停"
+              data:
+                tag: toshiba_washer
+                live_update: true
+                critical_text: 暂停
+                progress: "{{ progress }}"
+                progress_max: 100
+                notification_icon: mdi:pause-circle
+                notification_icon_color: "#FF9800"
+                color: "#FF9800"
+      - conditions: "{{ trigger.id == 'end' }}"
+        sequence:
+          - action: "{{ notify_target }}"
+            data:
+              title: "{{ title }}"
+              message: "{{ program }} · 好了，记得取衣服"
+              data:
+                tag: toshiba_washer
+                live_update: true
+                critical_text: 完成
+                progress: 100
+                progress_max: 100
+                notification_icon: mdi:check-circle
+                notification_icon_color: "#4CAF50"
+                color: "#4CAF50"
+      - conditions: "{{ trigger.id == 'error' }}"
+        sequence:
+          # 单独的普通通知；有声音、立即送达，但不突破勿扰/专注模式
+          - action: "{{ notify_target }}"
+            data:
+              title: 洗衣机故障
+              message: "故障代码 {{ trigger.to_state.state }}，请检查洗衣机"
+              data:
+                tag: toshiba_washer_error
+                push:
+                  interruption-level: active
+                  sound: default
+                ttl: 0
+                priority: high
+      - conditions: "{{ trigger.id == 'filter' and trigger.to_state.state == 'on' }}"
+        sequence:
+          - action: "{{ notify_target }}"
+            data:
+              title: 洗衣机
+              message: >
+                {{ '烘干' if 'dryer' in trigger.entity_id else '排水' }}过滤器需要清理
+              data:
+                tag: "toshiba_washer_{{ trigger.to_state.object_id }}"
+                notification_icon: mdi:air-filter
+      - conditions: "{{ trigger.id == 'filter' }}" # 变回 off：已清理
+        sequence:
+          - action: "{{ notify_target }}"
+            data:
+              message: clear_notification
+              data:
+                tag: "toshiba_washer_{{ trigger.to_state.object_id }}"
+      - conditions: >
+          {{ trigger.id == 'clear'
+             or (trigger.id == 'door' and is_state('sensor.washer_status', 'end')) }}
+        sequence:
+          - action: "{{ notify_target }}"
+            data:
+              message: clear_notification
+              data:
+                tag: toshiba_washer

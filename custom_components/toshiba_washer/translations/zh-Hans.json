@@ -1,0 +1,146 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "东芝洗衣机（IoLIFE）",
+        "description": "用 IoLIFE 账号登录一次，获取洗衣机的局域网密钥。设置期间请保持洗衣机开机（面板亮着）。",
+        "data": {
+          "email": "IoLIFE 邮箱",
+          "password": "IoLIFE 密码",
+          "ip_address": "洗衣机 IP 地址"
+        }
+      }
+    },
+    "error": {
+      "login_failed": "IoLIFE 登录失败，请检查邮箱和密码。",
+      "no_washer": "这个 IoLIFE 账号下没有找到洗衣机。",
+      "cannot_connect": "局域网内连不上洗衣机。请确认洗衣机已开机、IP 正确。",
+      "unknown": "发生意外错误，请查看 Home Assistant 日志。"
+    },
+    "abort": {
+      "already_configured": "这台洗衣机已经设置过了。"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "状态",
+        "state": {
+          "idle": "关机",
+          "standby": "待机",
+          "start": "运行中",
+          "pause": "暂停",
+          "end": "完成"
+        }
+      },
+      "finish_time": {
+        "name": "预计完成时间"
+      },
+      "stage": {
+        "name": "当前阶段",
+        "state": {
+          "wash": "洗涤",
+          "rinse": "漂洗",
+          "spin": "脱水",
+          "dry": "烘干",
+          "soft_keep": "柔软保持（防皱翻转）"
+        }
+      },
+      "mode": {
+        "name": "运行模式",
+        "state": {
+          "none": "无",
+          "wash_dry": "洗烘",
+          "wash": "只洗",
+          "dry": "只烘",
+          "clean_care": "清洁护理",
+          "care": "护理"
+        }
+      },
+      "program": {
+        "name": "程序",
+        "state": {
+          "none": "无",
+          "standard": "标准",
+          "tub_clean": "洗衣槽清洁",
+          "fast": "快速",
+          "careful": "细致洗",
+          "sixty_wash": "60℃洗",
+          "blanket": "毛毯",
+          "delicate": "轻柔洗",
+          "tub_clean_dry": "洗衣槽烘干清洁",
+          "memory": "记忆程序",
+          "sterilization": "除菌",
+          "mute": "静音",
+          "soft": "柔软",
+          "delicate_dryer": "轻柔烘干",
+          "soak": "浸泡",
+          "odor_eliminating": "除臭",
+          "empty": "空桶运转",
+          "degerm": "除菌洗",
+          "auto_care": "自动护理",
+          "auto_twice_wash": "自动两次洗",
+          "prewash_plus": "预洗加强",
+          "uv_wash_and_dry": "UV 洗烘",
+          "uv_dry_with_rotation": "UV 烘干（转动）",
+          "uv_dry_without_rotation": "UV 烘干（不转动）",
+          "forty_five_wash": "45℃洗",
+          "fragrant_and_delicate": "留香轻柔",
+          "tick_extermination": "除螨",
+          "pollen": "花粉",
+          "app_course_1": "App 程序 1",
+          "app_course_2": "App 程序 2",
+          "app_course_3": "App 程序 3",
+          "app_course": "App 程序",
+          "uv_wash": "UV 洗",
+          "uv_without_rotation": "UV（不转动）",
+          "uv_with_rotation": "UV（转动）",
+          "uv_deodorize_without_rotation": "UV 除臭（不转动）",
+          "uv_deodorize_with_rotation": "UV 除臭（转动）",
+          "60_tub_clean": "60℃洗衣槽清洁",
+          "tub_clean_wash_dry": "洗衣槽清洁（洗烘）",
+          "sheets": "床单",
+          "lace_curtain": "蕾丝窗帘",
+          "towel": "毛巾",
+          "fleece": "摇粒绒",
+          "school_uniform_or_washable": "校服／可水洗衣物",
+          "slacks_skirt": "裤装／裙子",
+          "jeans": "牛仔裤",
+          "cap": "帽子",
+          "down_jacket": "羽绒服",
+          "bet_putt": "宠物用品",
+          "functional_underwear": "功能内衣",
+          "reusable_bag": "环保袋",
+          "duvet": "被子",
+          "t_shirt_recovery": "T 恤复原",
+          "sports_wear": "运动服",
+          "light_dirt": "轻污",
+          "wash_thoroughly_and_rinse": "彻底洗涤漂洗",
+          "quick_wash_and_dry": "快速洗烘",
+          "yellowing_off": "去黄",
+          "disinfection_clothing": "消毒衣物",
+          "keep_water_temperature": "保持水温",
+          "prewash": "预洗",
+          "super_concentrated_soak": "超浓缩浸泡",
+          "no_rinse_and_delicate": "免漂洗轻柔",
+          "t_shirt_recovery_pro": "T 恤复原 Pro",
+          "customize": "自定义"
+        }
+      },
+      "error_code": {
+        "name": "故障代码"
+      }
+    },
+    "binary_sensor": {
+      "door_open": {
+        "name": "门"
+      },
+      "drain_filter_clean": {
+        "name": "排水过滤器需清理"
+      },
+      "dry_filter_clean": {
+        "name": "烘干过滤器需清理"
+      }
+    }
+  }
+}
